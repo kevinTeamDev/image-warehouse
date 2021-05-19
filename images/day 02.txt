@@ -1,0 +1,280 @@
+电商第二天：
+	回顾第一天:
+		1.	spring boot 与 maven 项目区别
+			
+		2.	通用mapper
+				做什么用的？
+				对单张表进行增删改查
+				a.	先导入依赖
+				b.	在实体类中添加注解
+				c.	编写接口，集成通用mapper<T>
+				d.	在启动类进行扫描 tk.mybatis
+				e.	业务逻辑层调用
+				f.	控制器调用业务逻辑层
+				g.	配置数据源
+				
+				
+		3.	克隆虚拟机
+			修改ip 地址：
+				如何修改？
+				vim /etc/sysconfig/network-scripts/ifcfg-ens33
+				IPADDR=
+				NETMASK=
+				GATEWAY=
+				DNS1=
+				static
+				yes
+			3.1	面试题： 安装mysql
+				导入sql文件
+					source /root/gmall.sql
+				导出sql文件
+					mysqldump
+					export
+				oracle	
+					imp / impdb
+					
+					exp / expdb
+	
+	第一件事：架构演变过程
+			
+			dubbo.io ====》http://dubbo.apache.org
+			1.	单一架构 jsp+servlet+tomcat
+					所有的CRUD ,所有的业务都写在一个项目中！
+					放映速度快慢：网络，服务器，cpu，
+						sql 语句：使用DBUtils工具类{ORM是关键} mybatis
+			2.	垂直架构：web 框架关键	
+			
+			3.	分布式架构：RPC 关键
+					本地：192.168.25.xxx
+					阿里云：47.95.xxx.xxx
+			4.	流动计算架构：SOA 关键 管理调度服务，防止资源浪费
+					dubbo 即可！
+					负载均衡。。。配置文件
+					
+				nginx.conf 配置文件详解 参考！
+			
+			dubbo 架构图：
+				
+				
+			dubbo：注册中心：链接服务提供者，服务消费者的桥梁！
+			
+			主角：dubbo
+			
+			
+			5.	如何实现一个soa 级别的架构
+				将controller与service 进行分离，分模块搭建
+				5.1	我们项目模块怎么分？
+					采用分布式
+				5.2	项目搭建
+					gmall-parent : 所有的jar 版本
+						gmall-bean :
+						gmall-interface ：
+						gmall-common-util :
+						gmall-service-util :
+						gmall-web-util :
+						gmall-user-manage :
+							a.	修改配置文件POM.xml
+								依赖父工程
+								依赖gmall-service-util
+								依赖gmall-interface
+							b.	编写mapper
+							
+							c.	修改配置文件
+				5.3	提出一个soa 的需求
+					应该有一个订单模块的子系统！
+					用户在下订单时候
+					根据userId 查询用户的地址列表？
+					userAddress ：用户地址表
+					select * from userAddress where userId=?
+					
+					5.3.1	建立一个gmall-order-web 订单web 模块！
+							a.	修改配置文件POM.xml
+								依赖父工程
+								依赖gmall-web-util
+								依赖gmall-interface
+							b.	修改配置文件
+							
+							c.	解决单表签问题
+								在web-util引入jar包
+								
+					5.3.2	在该项目中调用gmall-user-manage 
+								根据userId 查询用户的地址列表？
+							功能开发流程：
+								bean，mapper，service,service.impl, controller
+								userAddress
+							Field userService in com.atguigu.gmall0218.order.controller.OrderController required a bean of type 'com.atguigu.gmall0218.service.UserService' that could not be found.
+								因为：userService 在8080 服务器中
+								调用的时候在8081 服务器！
+								跨服务器：
+									跨域：ip，port 不同，都说明是跨域操作！
+									解决方案：@CrossOrigin httpClient Jsonp
+									
+							dubbo ；主角：
+				5.4	在linux 中安装dubbo 的环境
+					5.4.1	安装jdk
+							a.	先卸载jdk原始版本
+								rpm -qa | grep jdk
+								rpm -e --nodeps 
+							b.	安装我们的jdk 版本
+								JAVA_HOME=/opt/jdk1.8.0_152
+								PATH=$PATH:$JAVA_HOME/bin
+								CLASSPATH=$JAVA_HOME/lib
+								export JAVA_HOME PATH CLASSPATH
+								
+								临时生效：source /etc/profile
+								永久生效：reboot
+					5.4.2	安装zookeeper
+							a.	解压
+							b.	进入解压之后的目录找conf 进行拷贝
+									cp zoo_sample.cfg zoo.cfg
+							c.	进入bin目录执行文件
+									./zkServer.sh start
+									./zkServer.sh status
+					5.4.3	安装tomcat
+								a.	解压
+								b.	改名 mv apache-tomcat-8.5.24 tomcat8
+								c.	运行
+								d.	测试
+					5.4.4	安装一个监控中心
+							dubbo 监控中心实质：是一个 xxx.war包 动态web 工程！
+							a.	把监控中心放入tomcat中webapps 目录下，此时会自动解压！前提条件是：tomcat 启动！
+							b.	把tomcat 关掉！
+								./shutdown.sh 
+									在关闭的时候，一定要注意不能报错！
+							c.	将tomcat 中webapps 中的dubbo-admin-2.6.0.war 删掉！
+									rm -rf dubbo-admin-2.6.0.war
+							d.	修改名称：mv dubbo-admin-2.6.0 dubbo-admin
+							e.	重启tomcat
+									./startup.sh 
+									访问http://192.168.67.219:8080/dubbo-admin/ 输入用户名，密码 root root
+									
+									
+							f.	正常进入监控中心
+									http://192.168.67.219:8080/dubbo-admin/governance/providers
+				5.5	如何使用dubbo
+						两个注解 两个配置！
+						Service注解暴露服务
+						Reference注解引用服务
+						
+					配置服务提供者：
+					5.5.1	引入依赖
+						gmall-common-util 中引入
+						<dependency>
+						<groupId>com.alibaba</groupId>
+						<artifactId>dubbo</artifactId>
+						</dependency>
+
+						<dependency>
+						<groupId>com.101tec</groupId>
+						<artifactId>zkclient</artifactId>
+						<exclusions>
+							<exclusion>
+								<groupId>org.slf4j</groupId>
+								<artifactId>slf4j-log4j12</artifactId>
+							</exclusion>
+						</exclusions>
+						</dependency>
+
+						<dependency>
+						<groupId>com.gitee.reger</groupId>
+						<artifactId>spring-boot-starter-dubbo</artifactId>
+						</dependency>
+						
+						服务提供者：依赖的模块 service-util
+						服务消费者：依赖的模块 web-uitl
+						service-util，web-util 都依赖于 common-util
+						
+					5.5.2	
+						添加配置文件信息
+						spring.dubbo.application.name=usermanage
+						spring.dubbo.registry.protocol=zookeeper
+						spring.dubbo.registry.address=192.168.67.219:2181
+						spring.dubbo.base-package=com.atguigu.gmall0218
+						spring.dubbo.protocol.name=dubbo
+					5.5.3	添加注解 @Service
+					
+					5.5.4	测试！
+							注意：防火墙要关闭 linux ，本地都需要关闭！
+							systemctl stop firewalld.service
+							systemctl disable firewalld.service
+							
+					配置消费者：
+						
+						a.	添加注解 Reference注解引用服务
+								@Reference
+						b.	添加配置
+								spring.dubbo.application.name=order-web
+								spring.dubbo.registry.protocol=zookeeper
+								spring.dubbo.registry.address=192.168.67.219:2181
+								spring.dubbo.base-package=com.atguigu.gmall0218
+								spring.dubbo.protocol.name=dubbo
+								spring.dubbo.consumer.timeout=10000
+								spring.dubbo.consumer.check=false
+				
+				项目关键：
+					注册中心上！
+						zk Cluster！
+					生成环境：zk 集群 ，开启监控zk状态！
+					
+					监控中心可以不用开启！
+						可以使用zkCli.sh 观察是否有服务提供者！
+					
+					*** 自启动！	
+						cd /etc/rc.d/init.d
+						
+						vim zookeeper
+							#!/bin/bash
+							#chkconfig: 2345 10 90
+							#description: service zookeeper
+							export   JAVA_HOME=/opt/jdk1.8.0_152
+							export   ZOO_LOG_DIR=/opt/zookeeper/log
+							ZOOKEEPER_HOME=/opt/zookeeper
+							su    root    ${ZOOKEEPER_HOME}/bin/zkServer.sh      "$1"
+							
+						chmod +x zookeeper
+						
+						chkconfig --add zookeeper
+						chkconfig --list
+						
+						reboot
+						
+
+					
+					
+					
+					
+						
+					
+							
+							
+							
+						
+							
+
+
+								
+								
+
+								
+								
+					
+					
+						
+					
+								
+							
+							
+
+					
+				
+				
+	第二件事：对dubbo 进行使用
+		使用linux：
+			jdk
+			tomcat
+			zookeeper
+			
+
+
+
+
